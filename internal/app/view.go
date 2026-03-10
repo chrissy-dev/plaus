@@ -18,6 +18,7 @@ var (
 	white     = lipgloss.Color("255")
 	red       = lipgloss.Color("196")
 	dimWhite  = lipgloss.Color("250")
+	green     = lipgloss.Color("114")
 )
 
 var (
@@ -60,6 +61,28 @@ var (
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("238")).
 			Padding(0, 1)
+
+	activePeriodStyle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(purple)
+
+	inactivePeriodStyle = lipgloss.NewStyle().
+				Foreground(grey)
+
+	liveStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(green)
+
+	liveDotOn = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(green)
+
+	liveDotOff = lipgloss.NewStyle().
+			Foreground(lipgloss.Color("238"))
+
+	liveCountStyle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(green)
 )
 
 func (m Model) View() string {
@@ -70,8 +93,29 @@ func (m Model) View() string {
 
 	var b strings.Builder
 
-	b.WriteString(titleStyle.Render("Plaus") + "\n")
-	b.WriteString(subtitleStyle.Render(m.Site+" · Last 30 days") + "\n\n")
+	// Header line with title and period selector
+	header := titleStyle.Render("Plaus")
+	b.WriteString(header + "\n")
+
+	// Site + period selector line
+	siteLine := subtitleStyle.Render(m.Site)
+
+	// Live indicator for today view
+	if m.Period == PeriodToday && !m.Loading && m.Err == nil {
+		dot := "●"
+		var dotStyled string
+		if m.LiveTick {
+			dotStyled = liveDotOn.Render(dot)
+		} else {
+			dotStyled = liveDotOff.Render(dot)
+		}
+		liveText := dotStyled + " " + liveCountStyle.Render(fmt.Sprintf("%d current visitors", m.RealtimeVisitors))
+		siteLine += "  " + liveText
+	}
+	b.WriteString(siteLine + "\n")
+
+	// Period tabs
+	b.WriteString(renderPeriodTabs(m.Period) + "\n\n")
 
 	if m.Loading {
 		b.WriteString(subtitleStyle.Render("Loading...") + "\n")
@@ -90,9 +134,33 @@ func (m Model) View() string {
 	b.WriteString("\n\n")
 	b.WriteString(renderTwoPanels(m.Pages, m.Sources, w))
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("r refresh · q quit") + "\n")
+	b.WriteString(helpStyle.Render("1 today · 2 yesterday · 3 week · 4 month · r refresh · q quit") + "\n")
 
 	return b.String()
+}
+
+func renderPeriodTabs(active Period) string {
+	periods := []struct {
+		key    string
+		period Period
+	}{
+		{"1", PeriodToday},
+		{"2", PeriodYesterday},
+		{"3", PeriodWeek},
+		{"4", PeriodMonth},
+	}
+
+	var parts []string
+	for _, p := range periods {
+		label := p.key + " " + p.period.Label()
+		if p.period == active {
+			parts = append(parts, activePeriodStyle.Render(label))
+		} else {
+			parts = append(parts, inactivePeriodStyle.Render(label))
+		}
+	}
+
+	return "  " + strings.Join(parts, "  ")
 }
 
 func renderMetricCards(a api.Aggregate, width int) string {
@@ -143,7 +211,6 @@ func renderChart(ts []api.TimeSeriesPoint, width int) string {
 		values[i] = float64(p.Visitors)
 	}
 
-	// Interpolate to fill chart width so sparkline spans full width
 	interpolated := interpolate(values, chartWidth)
 
 	sl := sparkline.New(chartWidth, 5)
@@ -152,8 +219,8 @@ func renderChart(ts []api.TimeSeriesPoint, width int) string {
 	sl.DrawBraille()
 
 	// Date range labels
-	firstDate := ts[0].Date
-	lastDate := ts[len(ts)-1].Date
+	firstDate := formatTimeLabel(ts[0].Date)
+	lastDate := formatTimeLabel(ts[len(ts)-1].Date)
 	dateLabel := lipgloss.NewStyle().Foreground(grey)
 	padding := max(0, chartWidth-len(firstDate)-len(lastDate))
 	labelLine := dateLabel.Render(firstDate) +
@@ -164,6 +231,14 @@ func renderChart(ts []api.TimeSeriesPoint, width int) string {
 	content := header + "\n" + sl.View() + "\n" + labelLine
 
 	return chartBorder.Width(chartWidth).Render(content)
+}
+
+func formatTimeLabel(s string) string {
+	// Hourly timestamps come as "2026-03-10 14:00:00", shorten to "14:00"
+	if len(s) >= 16 && s[10] == ' ' {
+		return s[11:16]
+	}
+	return s
 }
 
 func interpolate(data []float64, targetLen int) []float64 {

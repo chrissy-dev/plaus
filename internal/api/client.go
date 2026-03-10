@@ -113,7 +113,7 @@ func (c *Client) query(q Query) (*QueryResponse, error) {
 	return &result, nil
 }
 
-func (c *Client) GetAggregate(dateRange string) (Aggregate, error) {
+func (c *Client) GetAggregate(dateRange any) (Aggregate, error) {
 	resp, err := c.query(Query{
 		Metrics:   []string{"visitors", "visits", "pageviews", "views_per_visit", "bounce_rate", "visit_duration"},
 		DateRange: dateRange,
@@ -135,7 +135,7 @@ func (c *Client) GetAggregate(dateRange string) (Aggregate, error) {
 	}, nil
 }
 
-func (c *Client) GetTopPages(dateRange string, limit int) ([]PageStats, error) {
+func (c *Client) GetTopPages(dateRange any, limit int) ([]PageStats, error) {
 	resp, err := c.query(Query{
 		Metrics:    []string{"visitors"},
 		DateRange:  dateRange,
@@ -156,7 +156,7 @@ func (c *Client) GetTopPages(dateRange string, limit int) ([]PageStats, error) {
 	return pages, nil
 }
 
-func (c *Client) GetTopSources(dateRange string, limit int) ([]SourceStats, error) {
+func (c *Client) GetTopSources(dateRange any, limit int) ([]SourceStats, error) {
 	resp, err := c.query(Query{
 		Metrics:    []string{"visitors"},
 		DateRange:  dateRange,
@@ -177,11 +177,11 @@ func (c *Client) GetTopSources(dateRange string, limit int) ([]SourceStats, erro
 	return sources, nil
 }
 
-func (c *Client) GetTimeSeries(dateRange string) ([]TimeSeriesPoint, error) {
+func (c *Client) GetTimeSeries(dateRange any, timeDimension string) ([]TimeSeriesPoint, error) {
 	resp, err := c.query(Query{
 		Metrics:    []string{"visitors"},
 		DateRange:  dateRange,
-		Dimensions: []string{"time:day"},
+		Dimensions: []string{timeDimension},
 	})
 	if err != nil {
 		return nil, err
@@ -194,4 +194,33 @@ func (c *Client) GetTimeSeries(dateRange string) ([]TimeSeriesPoint, error) {
 		}
 	}
 	return points, nil
+}
+
+func (c *Client) GetRealtimeVisitors() (int, error) {
+	req, err := http.NewRequest("GET", c.BaseURL+"/api/v1/stats/realtime/visitors?site_id="+c.SiteID, nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Authorization", "Bearer "+c.Token)
+
+	resp, err := c.HTTPClient.Do(req)
+	if err != nil {
+		return 0, err
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return 0, err
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return 0, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+	}
+
+	var count int
+	if err := json.Unmarshal(body, &count); err != nil {
+		return 0, err
+	}
+	return count, nil
 }

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -127,6 +128,59 @@ func TestAPIError(t *testing.T) {
 	_, err := c.GetAggregate("30d")
 	if err == nil {
 		t.Fatal("expected error for 401 response")
+	}
+}
+
+func TestGetRealtimeVisitors(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != "GET" {
+			t.Errorf("method = %s, want GET", r.Method)
+		}
+		if !strings.Contains(r.URL.Path, "/api/v1/stats/realtime/visitors") {
+			t.Errorf("path = %s, want /api/v1/stats/realtime/visitors", r.URL.Path)
+		}
+		if got := r.URL.Query().Get("site_id"); got != "example.com" {
+			t.Errorf("site_id = %q, want %q", got, "example.com")
+		}
+		w.Write([]byte("42"))
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL, "example.com", "test-token")
+	count, err := c.GetRealtimeVisitors()
+	if err != nil {
+		t.Fatalf("GetRealtimeVisitors: %v", err)
+	}
+	if count != 42 {
+		t.Errorf("count = %d, want 42", count)
+	}
+}
+
+func TestGetTimeSeriesHourly(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := QueryResponse{
+			Results: []ResultRow{
+				{Dimensions: []string{"2026-03-10 09:00:00"}, Metrics: []float64{25}},
+				{Dimensions: []string{"2026-03-10 10:00:00"}, Metrics: []float64{40}},
+			},
+		}
+		json.NewEncoder(w).Encode(resp)
+	}))
+	defer srv.Close()
+
+	c := NewClient(srv.URL, "example.com", "test-token")
+	ts, err := c.GetTimeSeries("day", "time:hour")
+	if err != nil {
+		t.Fatalf("GetTimeSeries: %v", err)
+	}
+	if len(ts) != 2 {
+		t.Fatalf("len = %d, want 2", len(ts))
+	}
+	if ts[0].Date != "2026-03-10 09:00:00" {
+		t.Errorf("ts[0].Date = %q", ts[0].Date)
+	}
+	if ts[1].Visitors != 40 {
+		t.Errorf("ts[1].Visitors = %d, want 40", ts[1].Visitors)
 	}
 }
 
