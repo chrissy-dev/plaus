@@ -14,6 +14,8 @@ type Model struct {
 	Sources   []api.SourceStats
 	Loading   bool
 	Err       error
+	Width     int
+	Height    int
 }
 
 type dataMsg struct {
@@ -29,6 +31,7 @@ func New(site string, client *api.Client) Model {
 		Site:    site,
 		Client:  client,
 		Loading: true,
+		Width:   80,
 	}
 }
 

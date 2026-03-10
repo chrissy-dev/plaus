@@ -4,6 +4,10 @@ import tea "github.com/charmbracelet/bubbletea"
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.Width = msg.Width
+		m.Height = msg.Height
+		return m, nil
 	case dataMsg:
 		m.Loading = false
 		m.Aggregate = msg.Aggregate
