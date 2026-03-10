@@ -13,6 +13,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.Aggregate = msg.Aggregate
 		m.Pages = msg.Pages
 		m.Sources = msg.Sources
+		m.TimeSeries = msg.TimeSeries
 		return m, nil
 	case errMsg:
 		m.Loading = false

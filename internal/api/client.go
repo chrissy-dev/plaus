@@ -71,6 +71,11 @@ type SourceStats struct {
 	Visitors int
 }
 
+type TimeSeriesPoint struct {
+	Date     string
+	Visitors int
+}
+
 func (c *Client) query(q Query) (*QueryResponse, error) {
 	q.SiteID = c.SiteID
 
@@ -170,4 +175,23 @@ func (c *Client) GetTopSources(dateRange string, limit int) ([]SourceStats, erro
 		}
 	}
 	return sources, nil
+}
+
+func (c *Client) GetTimeSeries(dateRange string) ([]TimeSeriesPoint, error) {
+	resp, err := c.query(Query{
+		Metrics:    []string{"visitors"},
+		DateRange:  dateRange,
+		Dimensions: []string{"time:day"},
+	})
+	if err != nil {
+		return nil, err
+	}
+	points := make([]TimeSeriesPoint, len(resp.Results))
+	for i, r := range resp.Results {
+		points[i] = TimeSeriesPoint{
+			Date:     r.Dimensions[0],
+			Visitors: int(r.Metrics[0]),
+		}
+	}
+	return points, nil
 }

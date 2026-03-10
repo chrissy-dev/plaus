@@ -7,21 +7,23 @@ import (
 )
 
 type Model struct {
-	Site      string
-	Client    *api.Client
-	Aggregate api.Aggregate
-	Pages     []api.PageStats
-	Sources   []api.SourceStats
-	Loading   bool
-	Err       error
-	Width     int
-	Height    int
+	Site       string
+	Client     *api.Client
+	Aggregate  api.Aggregate
+	Pages      []api.PageStats
+	Sources    []api.SourceStats
+	TimeSeries []api.TimeSeriesPoint
+	Loading    bool
+	Err        error
+	Width      int
+	Height     int
 }
 
 type dataMsg struct {
-	Aggregate api.Aggregate
-	Pages     []api.PageStats
-	Sources   []api.SourceStats
+	Aggregate  api.Aggregate
+	Pages      []api.PageStats
+	Sources    []api.SourceStats
+	TimeSeries []api.TimeSeriesPoint
 }
 
 type errMsg struct{ Err error }
@@ -52,9 +54,14 @@ func (m Model) fetchData() tea.Msg {
 	if err != nil {
 		return errMsg{Err: err}
 	}
+	ts, err := m.Client.GetTimeSeries("30d")
+	if err != nil {
+		return errMsg{Err: err}
+	}
 	return dataMsg{
-		Aggregate: agg,
-		Pages:     pages,
-		Sources:   sources,
+		Aggregate:  agg,
+		Pages:      pages,
+		Sources:    sources,
+		TimeSeries: ts,
 	}
 }
