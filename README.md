@@ -9,6 +9,8 @@ A terminal analytics dashboard for [Plausible Analytics](https://plausible.io). 
 
 Built with [Bubble Tea](https://github.com/charmbracelet/bubbletea), [Lip Gloss](https://github.com/charmbracelet/lipgloss), and [ntcharts](https://github.com/NimbleMarkets/ntcharts).
 
+![plaus screenshot](screenshot.jpg)
+
 ## Features
 
 - Top-line metrics: visitors, visits, pageviews, bounce rate, visit duration
