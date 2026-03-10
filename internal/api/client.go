@@ -1,6 +1,7 @@
 package api
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -9,24 +10,81 @@ import (
 
 type Client struct {
 	BaseURL    string
+	SiteID     string
 	Token      string
 	HTTPClient *http.Client
 }
 
-func NewClient(baseURL, token string) *Client {
+func NewClient(baseURL, siteID, token string) *Client {
 	return &Client{
 		BaseURL:    baseURL,
+		SiteID:     siteID,
 		Token:      token,
 		HTTPClient: &http.Client{},
 	}
 }
 
-func (c *Client) get(path string) ([]byte, error) {
-	req, err := http.NewRequest("GET", c.BaseURL+path, nil)
+// Query request/response types for /api/v2/query
+
+type Query struct {
+	SiteID     string     `json:"site_id"`
+	Metrics    []string   `json:"metrics"`
+	DateRange  any        `json:"date_range"`
+	Dimensions []string   `json:"dimensions,omitempty"`
+	Filters    []any      `json:"filters,omitempty"`
+	OrderBy    [][]any    `json:"order_by,omitempty"`
+	Pagination *Paginate  `json:"pagination,omitempty"`
+}
+
+type Paginate struct {
+	Limit  int `json:"limit,omitempty"`
+	Offset int `json:"offset,omitempty"`
+}
+
+type QueryResponse struct {
+	Results []ResultRow `json:"results"`
+}
+
+type ResultRow struct {
+	Dimensions []string  `json:"dimensions"`
+	Metrics    []float64 `json:"metrics"`
+}
+
+// Typed results for convenience
+
+type Aggregate struct {
+	Visitors      int
+	Visits        int
+	Pageviews     int
+	ViewsPerVisit float64
+	BounceRate    float64
+	VisitDuration int
+}
+
+type PageStats struct {
+	Page     string
+	Visitors int
+}
+
+type SourceStats struct {
+	Source   string
+	Visitors int
+}
+
+func (c *Client) query(q Query) (*QueryResponse, error) {
+	q.SiteID = c.SiteID
+
+	body, err := json.Marshal(q)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", c.BaseURL+"/api/v2/query", bytes.NewReader(body))
 	if err != nil {
 		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+c.Token)
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.HTTPClient.Do(req)
 	if err != nil {
@@ -34,21 +92,82 @@ func (c *Client) get(path string) ([]byte, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(body))
+		return nil, fmt.Errorf("API error %d: %s", resp.StatusCode, string(respBody))
 	}
-	return body, nil
+
+	var result QueryResponse
+	if err := json.Unmarshal(respBody, &result); err != nil {
+		return nil, err
+	}
+	return &result, nil
 }
 
-func (c *Client) GetJSON(path string, v any) error {
-	data, err := c.get(path)
+func (c *Client) GetAggregate(dateRange string) (Aggregate, error) {
+	resp, err := c.query(Query{
+		Metrics:   []string{"visitors", "visits", "pageviews", "views_per_visit", "bounce_rate", "visit_duration"},
+		DateRange: dateRange,
+	})
 	if err != nil {
-		return err
+		return Aggregate{}, err
 	}
-	return json.Unmarshal(data, v)
+	if len(resp.Results) == 0 {
+		return Aggregate{}, nil
+	}
+	m := resp.Results[0].Metrics
+	return Aggregate{
+		Visitors:      int(m[0]),
+		Visits:        int(m[1]),
+		Pageviews:     int(m[2]),
+		ViewsPerVisit: m[3],
+		BounceRate:    m[4],
+		VisitDuration: int(m[5]),
+	}, nil
+}
+
+func (c *Client) GetTopPages(dateRange string, limit int) ([]PageStats, error) {
+	resp, err := c.query(Query{
+		Metrics:    []string{"visitors"},
+		DateRange:  dateRange,
+		Dimensions: []string{"event:page"},
+		OrderBy:    [][]any{{"visitors", "desc"}},
+		Pagination: &Paginate{Limit: limit},
+	})
+	if err != nil {
+		return nil, err
+	}
+	pages := make([]PageStats, len(resp.Results))
+	for i, r := range resp.Results {
+		pages[i] = PageStats{
+			Page:     r.Dimensions[0],
+			Visitors: int(r.Metrics[0]),
+		}
+	}
+	return pages, nil
+}
+
+func (c *Client) GetTopSources(dateRange string, limit int) ([]SourceStats, error) {
+	resp, err := c.query(Query{
+		Metrics:    []string{"visitors"},
+		DateRange:  dateRange,
+		Dimensions: []string{"visit:source"},
+		OrderBy:    [][]any{{"visitors", "desc"}},
+		Pagination: &Paginate{Limit: limit},
+	})
+	if err != nil {
+		return nil, err
+	}
+	sources := make([]SourceStats, len(resp.Results))
+	for i, r := range resp.Results {
+		sources[i] = SourceStats{
+			Source:   r.Dimensions[0],
+			Visitors: int(r.Metrics[0]),
+		}
+	}
+	return sources, nil
 }
