@@ -12,14 +12,19 @@ import (
 	"github.com/chriswk/plaus/internal/config"
 )
 
+var version = "dev"
+
 func usage() {
-	fmt.Fprintf(os.Stderr, `Usage:
+	fmt.Fprintf(os.Stderr, `plaus %s — terminal analytics for Plausible
+
+Usage:
   plaus init            Initialize config
   plaus add <site>      Add a site
   plaus sites           List configured sites
   plaus remove <site>   Remove a site
   plaus <site>          Launch dashboard
-`)
+  plaus version         Show version
+`, version)
 }
 
 func main() {
@@ -46,6 +51,8 @@ func main() {
 			os.Exit(1)
 		}
 		err = cli.RemoveSite(os.Args[2])
+	case "version", "-v", "--version":
+		fmt.Println("plaus", version)
 	case "help", "-h", "--help":
 		usage()
 	default:
