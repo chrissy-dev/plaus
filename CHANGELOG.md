@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/chrissy-dev/plaus/compare/v1.0.1...v1.1.0) (2026-03-11)
+
+
+### Features
+
+* add bar chart toggle and persist user preferences ([5c8a5e3](https://github.com/chrissy-dev/plaus/commit/5c8a5e393037fbbdfb6b6dfc56835b779b93cbc1))
+
 ## [1.0.1](https://github.com/chrissy-dev/plaus/compare/v1.0.0...v1.0.1) (2026-03-11)
 
 
