@@ -6,10 +6,10 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/chriswk/plaus/internal/api"
-	"github.com/chriswk/plaus/internal/app"
-	"github.com/chriswk/plaus/internal/cli"
-	"github.com/chriswk/plaus/internal/config"
+	"github.com/chrissy-dev/plaus/internal/api"
+	"github.com/chrissy-dev/plaus/internal/app"
+	"github.com/chrissy-dev/plaus/internal/cli"
+	"github.com/chrissy-dev/plaus/internal/config"
 )
 
 var version = "dev"

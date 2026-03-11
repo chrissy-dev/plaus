@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/chrissy-dev/plaus/actions/workflows/ci.yml/badge.svg)](https://github.com/chrissy-dev/plaus/actions/workflows/ci.yml)
 [![Release](https://github.com/chrissy-dev/plaus/actions/workflows/release.yml/badge.svg)](https://github.com/chrissy-dev/plaus/actions/workflows/release.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/chriswk/plaus)](https://goreportcard.com/report/github.com/chriswk/plaus)
+[![Go Report Card](https://goreportcard.com/badge/github.com/chrissy-dev/plaus)](https://goreportcard.com/report/github.com/chrissy-dev/plaus)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 A terminal analytics dashboard for [Plausible Analytics](https://plausible.io). View your website stats without leaving the terminal.
@@ -29,7 +29,7 @@ Download the latest binary from [Releases](https://github.com/chrissy-dev/plaus/
 ### From source
 
 ```
-go install github.com/chriswk/plaus/cmd/plaus@latest
+go install github.com/chrissy-dev/plaus/cmd/plaus@latest
 ```
 
 ### Build locally

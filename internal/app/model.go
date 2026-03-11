@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"github.com/chriswk/plaus/internal/api"
+	"github.com/chrissy-dev/plaus/internal/api"
 )
 
 type Period int

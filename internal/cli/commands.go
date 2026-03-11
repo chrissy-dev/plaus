@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/chriswk/plaus/internal/config"
+	"github.com/chrissy-dev/plaus/internal/config"
 )
 
 func prompt(label, defaultVal string) string {

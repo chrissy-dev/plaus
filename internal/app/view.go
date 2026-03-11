@@ -7,7 +7,7 @@ import (
 	"github.com/NimbleMarkets/ntcharts/sparkline"
 	"github.com/charmbracelet/lipgloss"
 
-	"github.com/chriswk/plaus/internal/api"
+	"github.com/chrissy-dev/plaus/internal/api"
 )
 
 var (

@@ -1,4 +1,4 @@
-module github.com/chriswk/plaus
+module github.com/chrissy-dev/plaus
 
 go 1.23
 
