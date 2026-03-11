@@ -78,7 +78,9 @@ func launch(domain string) error {
 	}
 
 	client := api.NewClient(cfg.BaseURL, domain, site.Token)
-	m := app.New(domain, client)
+	graphType := app.GraphTypeFromString(cfg.GraphType)
+	period := app.PeriodFromString(cfg.Period)
+	m := app.New(domain, client, graphType, period)
 	p := tea.NewProgram(m, tea.WithAltScreen())
 	_, err = p.Run()
 	return err

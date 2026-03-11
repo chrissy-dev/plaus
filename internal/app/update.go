@@ -49,6 +49,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.switchPeriod(PeriodWeek)
 		case "4":
 			return m, m.switchPeriod(PeriodMonth)
+		case "g":
+			m.ToggleGraph()
+			return m, nil
 		}
 	}
 	return m, nil
@@ -59,5 +62,6 @@ func (m *Model) switchPeriod(p Period) tea.Cmd {
 	m.Loading = true
 	m.Err = nil
 	m.RealtimeVisitors = 0
+	m.savePrefs()
 	return m.fetchData
 }

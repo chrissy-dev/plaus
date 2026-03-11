@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/NimbleMarkets/ntcharts/barchart"
 	"github.com/NimbleMarkets/ntcharts/sparkline"
 	"github.com/charmbracelet/lipgloss"
 
@@ -130,11 +131,19 @@ func (m Model) View() string {
 
 	b.WriteString(renderMetricCards(m.Aggregate, w))
 	b.WriteString("\n\n")
-	b.WriteString(renderChart(m.TimeSeries, w))
+	if m.Graph == GraphBar {
+		b.WriteString(renderBarChart(m.TimeSeries, w))
+	} else {
+		b.WriteString(renderLineChart(m.TimeSeries, w))
+	}
 	b.WriteString("\n\n")
 	b.WriteString(renderTwoPanels(m.Pages, m.Sources, w))
 	b.WriteString("\n")
-	b.WriteString(helpStyle.Render("1 today · 2 yesterday · 3 week · 4 month · r refresh · q quit") + "\n")
+	graphLabel := "line"
+	if m.Graph == GraphBar {
+		graphLabel = "bar"
+	}
+	b.WriteString(helpStyle.Render("1 today · 2 yesterday · 3 week · 4 month · g graph ("+graphLabel+") · r refresh · q quit") + "\n")
 
 	return b.String()
 }
@@ -196,7 +205,7 @@ func renderMetricCards(a api.Aggregate, width int) string {
 	return lipgloss.JoinHorizontal(lipgloss.Top, rendered...)
 }
 
-func renderChart(ts []api.TimeSeriesPoint, width int) string {
+func renderLineChart(ts []api.TimeSeriesPoint, width int) string {
 	if len(ts) == 0 {
 		return ""
 	}
@@ -218,7 +227,6 @@ func renderChart(ts []api.TimeSeriesPoint, width int) string {
 	sl.PushAll(interpolated)
 	sl.DrawBraille()
 
-	// Date range labels
 	firstDate := formatTimeLabel(ts[0].Date)
 	lastDate := formatTimeLabel(ts[len(ts)-1].Date)
 	dateLabel := lipgloss.NewStyle().Foreground(grey)
@@ -229,6 +237,46 @@ func renderChart(ts []api.TimeSeriesPoint, width int) string {
 
 	header := panelHeaderStyle.Render("Visitors")
 	content := header + "\n" + sl.View() + "\n" + labelLine
+
+	return chartBorder.Width(chartWidth).Render(content)
+}
+
+func renderBarChart(ts []api.TimeSeriesPoint, width int) string {
+	if len(ts) == 0 {
+		return ""
+	}
+
+	chartWidth := width - 6
+	if chartWidth < 20 {
+		chartWidth = 20
+	}
+
+	barStyle := lipgloss.NewStyle().Foreground(purple)
+
+	bars := make([]barchart.BarData, len(ts))
+	for i, p := range ts {
+		bars[i] = barchart.BarData{
+			Label: formatTimeLabel(p.Date),
+			Values: []barchart.BarValue{
+				{Value: float64(p.Visitors), Style: barStyle},
+			},
+		}
+	}
+
+	bc := barchart.New(chartWidth, 5)
+	bc.PushAll(bars)
+	bc.Draw()
+
+	firstDate := formatTimeLabel(ts[0].Date)
+	lastDate := formatTimeLabel(ts[len(ts)-1].Date)
+	dateLabel := lipgloss.NewStyle().Foreground(grey)
+	padding := max(0, chartWidth-len(firstDate)-len(lastDate))
+	labelLine := dateLabel.Render(firstDate) +
+		strings.Repeat(" ", padding) +
+		dateLabel.Render(lastDate)
+
+	header := panelHeaderStyle.Render("Visitors")
+	content := header + "\n" + bc.View() + "\n" + labelLine
 
 	return chartBorder.Width(chartWidth).Render(content)
 }

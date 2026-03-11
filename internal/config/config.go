@@ -11,6 +11,8 @@ type Config struct {
 	BaseURL     string          `json:"base_url"`
 	DefaultSite string          `json:"default_site"`
 	Sites       map[string]Site `json:"sites"`
+	GraphType   string          `json:"graph_type,omitempty"`
+	Period      string          `json:"period,omitempty"`
 }
 
 type Site struct {

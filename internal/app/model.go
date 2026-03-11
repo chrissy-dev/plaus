@@ -6,6 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"github.com/chrissy-dev/plaus/internal/api"
+	"github.com/chrissy-dev/plaus/internal/config"
 )
 
 type Period int
@@ -55,10 +56,18 @@ func (p Period) TimeDimension() string {
 	}
 }
 
+type GraphType int
+
+const (
+	GraphLine GraphType = iota
+	GraphBar
+)
+
 type Model struct {
 	Site             string
 	Client           *api.Client
 	Period           Period
+	Graph            GraphType
 	Aggregate        api.Aggregate
 	Pages            []api.PageStats
 	Sources          []api.SourceStats
@@ -83,13 +92,73 @@ type realtimeMsg struct{ Count int }
 type realtimeErrMsg struct{ Err error }
 type tickMsg time.Time
 
-func New(site string, client *api.Client) Model {
+func New(site string, client *api.Client, graphType GraphType, period Period) Model {
 	return Model{
 		Site:    site,
 		Client:  client,
-		Period:  PeriodMonth,
+		Period:  period,
+		Graph:   graphType,
 		Loading: true,
 		Width:   80,
+	}
+}
+
+func (m *Model) savePrefs() {
+	cfg, err := config.Load()
+	if err != nil {
+		return
+	}
+	cfg.GraphType = GraphTypeToString(m.Graph)
+	cfg.Period = PeriodToString(m.Period)
+	config.Save(cfg)
+}
+
+func (m *Model) ToggleGraph() {
+	if m.Graph == GraphLine {
+		m.Graph = GraphBar
+	} else {
+		m.Graph = GraphLine
+	}
+	m.savePrefs()
+}
+
+func GraphTypeFromString(s string) GraphType {
+	if s == "bar" {
+		return GraphBar
+	}
+	return GraphLine
+}
+
+func GraphTypeToString(g GraphType) string {
+	if g == GraphBar {
+		return "bar"
+	}
+	return "line"
+}
+
+func PeriodFromString(s string) Period {
+	switch s {
+	case "today":
+		return PeriodToday
+	case "yesterday":
+		return PeriodYesterday
+	case "7d":
+		return PeriodWeek
+	default:
+		return PeriodMonth
+	}
+}
+
+func PeriodToString(p Period) string {
+	switch p {
+	case PeriodToday:
+		return "today"
+	case PeriodYesterday:
+		return "yesterday"
+	case PeriodWeek:
+		return "7d"
+	default:
+		return "30d"
 	}
 }
 
