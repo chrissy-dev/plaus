@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/chrissy-dev/plaus/compare/v1.0.0...v1.0.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* update module path to github.com/chrissy-dev/plaus ([4eb3060](https://github.com/chrissy-dev/plaus/commit/4eb30608043869eeead478e322fbe8f26f4fe3ac))
+
 ## 1.0.0 (2026-03-10)
 
 
